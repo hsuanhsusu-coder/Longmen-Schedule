@@ -319,8 +319,8 @@
 
   <div id="appShell">
     <div class="mode-switch" id="modeSwitch">
-      <button type="button" class="mode-btn active" data-mode="summer" id="modeSummer">☀️ 暑期訓練</button>
-      <button type="button" class="mode-btn" data-mode="semester" id="modeSemester">📚 學期訓練</button>
+      <button type="button" class="mode-btn" data-mode="summer" id="modeSummer">☀️ 暑期訓練</button>
+      <button type="button" class="mode-btn active" data-mode="semester" id="modeSemester">📚 學期訓練</button>
     </div>
 
     <div class="tabs">
@@ -329,7 +329,7 @@
     </div>
 
     <!-- ===== 填寫（家長） ===== -->
-    <section class="panel show" id="panel-fill">
+    <section class="panel" id="panel-fill">
       <div id="noChild" class="card" style="display:none">
         <div class="empty-state"><div class="big">🔑</div>
           你目前還沒有被指派任何學員。<br>請聯絡管理員 泳隊家長後援會，用你登入的這個 Google 信箱完成綁定後，再回來填寫。
@@ -507,7 +507,7 @@
     </section>
 
     <!-- ===== 學期：填寫（家長） ===== -->
-    <section class="panel" id="panel-sem-fill">
+    <section class="panel show" id="panel-sem-fill">
       <div id="semNoSetup" class="card" style="display:none">
         <div class="empty-state"><div class="big">🗓️</div>學期訓練尚未開放，管理員設定好學期區間後即可填寫。</div>
       </div>
@@ -680,7 +680,7 @@
   let activeId=null, responses={};
 
   /* ===== 學期版狀態 ===== */
-  let mode="summer";           // "summer" | "semester"
+  let mode="semester";         // "summer" | "semester"（預設學期訓練）
   // 週模板：weekDays[dow] = { am:{on,venue}, pm:{on,venue} }，dow 1=週一..6=週六，0=週日
   const DEFAULT_WEEK_TPL = (()=>{ const t={};
     for(let i=0;i<=6;i++){
@@ -726,6 +726,7 @@
     if(isAdmin || isViewer){ await loadAllStudents(); renderBindUI(); renderViewersUI(); renderSummary(); }
     if(isAdmin){ renderLockUI(); }
     await loadMyStudents();
+    if(mode==="semester"){ refreshSemester(); }  // 預設是學期模式,登入後直接載入學期資料
   });
   function showLogin(){ $("loginCard").style.display="block"; $("appShell").style.display="none"; $("authBar").style.display="none"; }
   function showApp(user){
