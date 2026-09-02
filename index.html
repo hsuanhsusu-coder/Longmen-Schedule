@@ -294,7 +294,6 @@
     <h1><span class="yr">2026</span> 龍門泳隊訓練時間</h1>
     <div class="sub">晨訓 / 午訓 出席調查</div>
     <div class="meta">
-      <span class="chip">📅 7/1 – 8/30（每週日休息）</span>
       <span class="chip">🏊 晨訓 · 午訓</span>
       <span class="chip">📍 龍門 / 永運</span>
     </div>
@@ -726,6 +725,11 @@
     if(isAdmin || isViewer){ await loadAllStudents(); renderBindUI(); renderViewersUI(); renderSummary(); }
     if(isAdmin){ renderLockUI(); }
     await loadMyStudents();
+    // 登入後一律回到「填寫意願」分頁（家長 default 直接進填寫畫面）
+    curTab="fill";
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    $("tabFill").classList.add("active");
+    showPanels();
     if(mode==="semester"){ refreshSemester(); }  // 預設是學期模式,登入後直接載入學期資料
   });
   function showLogin(){ $("loginCard").style.display="block"; $("appShell").style.display="none"; $("authBar").style.display="none"; }
@@ -1442,7 +1446,8 @@
     loadSemForParent();
     // 管理員/檢視者的學期子分頁可見性
     $("ssubSetup").style.display=isAdmin?"inline-block":"none";
-    if(isViewer && !isAdmin){
+    if(!isAdmin){
+      // 非最高管理員（含檢視者、一般家長）一律看不到「學期設定」,只留彙總
       $("ssub-setup").classList.remove("show"); $("ssubSetup").classList.remove("active");
       $("ssubSummary").classList.add("active"); $("ssub-summary").classList.add("show");
     }
@@ -1476,6 +1481,7 @@
   }
   async function saveSemSetup(){
     const t=$("semSetupToast");
+    if(!isAdmin){ t.className="toast err"; t.textContent="只有最高管理員能修改學期設定。"; return; }
     const name=$("semName").value.trim(), start=$("semStart").value, end=$("semEnd").value;
     if(!name){ t.className="toast err"; t.textContent="請填學期名稱。"; return; }
     if(!start||!end){ t.className="toast err"; t.textContent="請填開始與結束日期。"; return; }
