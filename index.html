@@ -594,8 +594,9 @@
           <div class="export-row">
             <button type="button" class="btn btn-primary" id="semExportBtn">⬇️ 匯出 CSV（明細）</button>
             <button type="button" class="btn btn-ghost" id="semExportWeekBtn">⬇️ 每週彙總 CSV</button>
+            <button type="button" class="btn btn-ghost" id="semExportMatrixBtn">⬇️ 名單×場次 CSV（打勾表）</button>
           </div>
-          <div class="note">明細為「一列一個固定出席場次」（姓名／座號／年級／家長信箱／星期／場次／地點）；每週彙總列出每個場次有幾人固定出席。</div>
+          <div class="note">明細為「一列一個固定出席場次」（姓名／座號／年級／家長信箱／星期／場次／地點）；每週彙總列出每個場次有幾人固定出席；打勾表為一人一列、橫向依「星期×場次」排列（✓＝固定出席），適合當點名底表。</div>
         </div>
         <div class="card">
           <h2>👥 出席名單（依名單順序）</h2>
@@ -1701,6 +1702,27 @@
       rows.push([SEM_WD[dow],SESS_LABEL[sess],v,tally[dow+"_"+sess]||0]); }); }
     download(`龍門學期常規_每週彙總_${stamp()}.csv`,rows);
   }
+  function semExportMatrix(){
+    // 打勾表：一人一列,欄位依 星期×場次 排列（只列有訓練的場次）
+    const list=semActiveAll(); if(list.length===0){ alert("名單是空的。"); return; }
+    if(!semSetup){ alert("尚未設定學期。"); return; }
+    // 建欄位清單（週一晨 → 週六午,只含有開訓的場次）
+    const cols=[];
+    for(let dow=1;dow<=6;dow++){ ["am","pm"].forEach(sess=>{ const v=semVenueOf(dow,sess);
+      if(v!==null) cols.push({ key:dow+"_"+sess, label:`${SEM_WD[dow]}${SESS_LABEL[sess]}(${v})` }); }); }
+    const header=["序號","姓名","座號","年級",...cols.map(c=>c.label),"固定場次數","備註"];
+    const rows=[header];
+    list.forEach(s=>{
+      const r=s.semResponses||{};
+      const marks=cols.map(c=> r[c.key]==="yes" ? "✓" : "" );
+      const cnt=marks.filter(x=>x).length;
+      rows.push([s.order,s.name,s.seat||"",s.grade||"",...marks,cnt,s.semComment||""]);
+    });
+    // 底部加每場次合計列
+    const totals=cols.map(c=> list.filter(s=>(s.semResponses||{})[c.key]==="yes").length );
+    rows.push(["","合計","","",...totals,"",""]);
+    download(`龍門學期常規_打勾表_${stamp()}.csv`,rows);
+  }
 
   /* ---------- 綁定事件 ---------- */
   // 目前在哪個分頁（fill / admin），切換模式時沿用
@@ -1756,6 +1778,7 @@
   $("semClear").addEventListener("click",()=>semQuick("clear"));
   $("semExportBtn").addEventListener("click",semExportDetail);
   $("semExportWeekBtn").addEventListener("click",semExportWeekly);
+  $("semExportMatrixBtn").addEventListener("click",semExportMatrix);
   $("summerLockBtn").addEventListener("click",()=>setLock("summerOpen", !locks.summerOpen));
   $("semLockBtn").addEventListener("click",()=>setLock("semesterOpen", !locks.semesterOpen));
   // 代改出席 modal
