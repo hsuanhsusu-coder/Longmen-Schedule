@@ -1108,11 +1108,14 @@
 
   /* ---------- 代改出席（管理員） ---------- */
   let attEditId=null, attMode="summer", attSummer={}, attSem={};
+  let attCommentSummer="", attCommentSem="";   // 代填意見草稿（跨分頁切換保留）
   function openAttEditor(id){
     const s=allStudents.find(x=>x.id===id); if(!s)return;
     attEditId=id; attMode="summer";
     attSummer=s.responses?{...s.responses}:{};
     attSem=s.semResponses?{...s.semResponses}:{};
+    attCommentSummer=s.comment||"";
+    attCommentSem=s.semComment||"";
     $("attModalTitle").textContent="代改出席 · "+s.name;
     $("attTabSummer").classList.add("active"); $("attTabSemester").classList.remove("active");
     $("attToast").className="toast"; $("attToast").textContent="";
@@ -1123,7 +1126,11 @@
   function renderAttBody(){
     const body=$("attBody");
     if(attMode==="summer"){
-      body.innerHTML=`<p class="lead" style="margin-bottom:10px">點一下「晨/午」格子切換出席（綠勾＝會出席）。每週日休息、8/31 開學不訓練。</p><div id="attCalendars"></div>`;
+      body.innerHTML=`<p class="lead" style="margin-bottom:10px">點一下「晨/午」格子切換出席（綠勾＝會出席）。每週日休息、8/31 開學不訓練。</p><div id="attCalendars"></div>
+        <div class="field" style="margin-top:14px"><label for="attCommentSummer">其他意見（代填,家長端會看到）</label>
+        <textarea id="attCommentSummer" maxlength="500" placeholder="例如:7/20 那週要出國,無法參加。"></textarea></div>`;
+      $("attCommentSummer").value=attCommentSummer;
+      $("attCommentSummer").addEventListener("input",e=>{ attCommentSummer=e.target.value; });
       const root=$("attCalendars");
       MONTHS.forEach(({m,label,en})=>{
         const sec=document.createElement("div"); sec.className="month";
@@ -1156,7 +1163,11 @@
       $("attHint").textContent=`暑期目前勾選 ${Object.keys(attSummer).length} 場`;
     } else {
       if(!semSetup){ body.innerHTML=`<div class="note">尚未設定學期，無法編輯學期出席。</div>`; $("attHint").textContent=""; return; }
-      body.innerHTML=`<p class="lead" style="margin-bottom:10px">點一下切換「每週固定出席」。</p><div class="weekgrid" id="attWeek"></div>`;
+      body.innerHTML=`<p class="lead" style="margin-bottom:10px">點一下切換「每週固定出席」。</p><div class="weekgrid" id="attWeek"></div>
+        <div class="field" style="margin-top:14px"><label for="attCommentSem">其他意見（代填,家長端會看到）</label>
+        <textarea id="attCommentSem" maxlength="500" placeholder="例如:每月第一週固定請假、某段期間出國等。"></textarea></div>`;
+      $("attCommentSem").value=attCommentSem;
+      $("attCommentSem").addEventListener("input",e=>{ attCommentSem=e.target.value; });
       const el=$("attWeek"); let html="";
       for(let dow=1;dow<=6;dow++){
         const am=semVenueOf(dow,"am"), pm=semVenueOf(dow,"pm");
@@ -1183,9 +1194,14 @@
     if(!attEditId)return; const t=$("attToast");
     const s=allStudents.find(x=>x.id===attEditId); if(!s)return;
     try{
-      await updateDoc(doc(db,"students",attEditId), { responses:{...attSummer}, semResponses:{...attSem}, updatedAt:serverTimestamp() });
+      await updateDoc(doc(db,"students",attEditId), {
+        responses:{...attSummer}, semResponses:{...attSem},
+        comment:attCommentSummer.trim(), semComment:attCommentSem.trim(),
+        updatedAt:serverTimestamp()
+      });
       s.responses={...attSummer}; s.semResponses={...attSem};
-      t.className="toast ok"; t.textContent="已儲存變更。";
+      s.comment=attCommentSummer.trim(); s.semComment=attCommentSem.trim();
+      t.className="toast ok"; t.textContent="已儲存變更（含其他意見）。";
       renderSummary(); if(typeof renderSemSummary==="function") renderSemSummary();
       setTimeout(closeAttEditor, 700);
     }catch(e){ t.className="toast err"; t.textContent="儲存失敗："+(e.code||e.message); }
